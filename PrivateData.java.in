@@ -1,0 +1,6 @@
+package com.sugree.twitter;
+
+public class PrivateData {
+	public static final String OAUTH_CONSUMER_KEY = "xxxxxxxxxxxxxxxxxxxxx";
+	public static final String OAUTH_CONSUMER_SECRET = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy";
+}
