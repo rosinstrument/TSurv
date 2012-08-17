@@ -2,12 +2,12 @@ MIDlet-1: TwitterMIDlet,/icon.png,com.sugree.twitter.TwitterMIDlet
 MIDlet-Description: Twitter client, surveillance camera based on mobile/twitter
 MIDlet-Icon: /icon.png
 MIDlet-Info-URL: http://twi.rosinstrument.com/dist/
-MIDlet-Jar-Size: 123033
+MIDlet-Jar-Size: 123578
 MIDlet-Jar-URL: TSurv.jar
 MIDlet-Name: TSurv
 MIDlet-Permissions: javax.microedition.io.Connector.http
 MIDlet-Permissions-Opt: javax.microedition.io.Connector.https, javax.microedition.media.control.VideoControl.getSnapshot, javax.microedition.io.Connector.file.read, javax.microedition.media.Player, javax.microedition.media.Manager
 MIDlet-Vendor: twi.rosinstrument.com
-MIDlet-Version: 0.4.61
+MIDlet-Version: 0.4.65
 MicroEdition-Configuration: CLDC-1.1
 MicroEdition-Profile: MIDP-2.0

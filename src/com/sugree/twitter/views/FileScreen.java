@@ -2,10 +2,8 @@ package com.sugree.twitter.views;
 
 import com.substanceofcode.tasks.AbstractTask;
 import com.substanceofcode.utils.HttpUtil;
-import com.substanceofcode.utils.StringUtil;
 import com.sugree.twitter.TwitterController;
 import com.sugree.twitter.TwitterException;
-import com.sugree.twitter.tasks.UpdateStatusTask;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -629,7 +627,11 @@ public class FileScreen extends Form implements CommandListener, FileSystemListe
             if (saveUrl()) {
                 proposedName = ((String) url).substring(((String) url).lastIndexOf('/') + 1);
             } else if (saveFile()) {
-                proposedName = generatedFileName() + ".3gp";
+                proposedName = generatedFileName();
+                String suffix = ((String[]) url)[0];
+                if (suffix != null) {
+                    proposedName += suffix;
+                }
             }
         }
         nameInput = new TextField("Enter Name", proposedName, 256, TextField.ANY);

@@ -2,6 +2,7 @@ package com.sugree.twitter.views;
 
 import com.substanceofcode.twitter.Settings;
 import com.substanceofcode.utils.Log;
+import com.substanceofcode.utils.StringUtil;
 import com.sugree.twitter.TwitterController;
 import com.sugree.twitter.TwitterException;
 import com.sugree.utils.Location;
@@ -24,7 +25,7 @@ public class UpdateStatusScreen extends Form implements CommandListener, ItemSta
 
     private TwitterController controller;
     private Command sendCommand, cancelCommand, insertCommand, snapshotCommand;
-    private Command quickSnapshotCommand, fileSnapshotCommand, videoCommand;
+    private Command quickSnapshotCommand, fileSnapshotCommand, videoCommand, audioCommand;
     private Command gpsCommand, reverseGeocoderCommand, showPicCommand, setupCommand;
     private Command cellIdCommand, statCommand, squeezeCommand, attachFileCommand;
     private Command cleanAllCommand;
@@ -41,6 +42,7 @@ public class UpdateStatusScreen extends Form implements CommandListener, ItemSta
         addCommand(cancelCommand = new Command("Cancel", Command.CANCEL, 2));
         addCommand(insertCommand = new Command("InsertText", Command.SCREEN, 3));
         addCommand(videoCommand = new Command("VideoFile", Command.SCREEN, 4));
+        addCommand(audioCommand = new Command("AudioFile", Command.SCREEN, 4));
         addCommand(snapshotCommand = new Command("GetShot", Command.SCREEN, 4));
         addCommand(quickSnapshotCommand = new Command("TweetShot", Command.SCREEN, 5));
         addCommand(fileSnapshotCommand = new Command("PicFile", Command.SCREEN, 5));
@@ -187,7 +189,9 @@ public class UpdateStatusScreen extends Form implements CommandListener, ItemSta
             } else if (cmd == insertCommand) {
                 controller.showInsert();
             } else if (cmd == videoCommand) {
-                showVideo();
+                showMedia(1);
+            } else if (cmd == audioCommand) {
+                showMedia(2);
             } else if (cmd == snapshotCommand) {
                 controller.showSnapshot();
             } else if (cmd == quickSnapshotCommand) {
@@ -306,10 +310,11 @@ public class UpdateStatusScreen extends Form implements CommandListener, ItemSta
         }
     }
 
-    public void showVideo() {
+    public void showMedia(final int type) {
         try {
-            final String[] fn = {null};
-            final FileScreen fs = new FileScreen(controller, controller.getCurrentScreen(), "Save video to file..", fn);
+            String ext = "." + mediaFileExtension(type);
+            final String[] fn = {ext};
+            final FileScreen fs = new FileScreen(controller, controller.getCurrentScreen(), "Save media to file..", fn);
             fs.start(true);
             new Thread(new Runnable() {
                 public void run() {
@@ -320,7 +325,7 @@ public class UpdateStatusScreen extends Form implements CommandListener, ItemSta
                         if (fn[0] != null) {
                             try {
                                 SnapshotScreen ss = new SnapshotScreen(controller,
-                                        getString(), fn[0]);
+                                        getString(), type == 2 ? "audio:" + fn[0] : fn[0]);
                                 controller.setCurrent(ss);
                                 ss.start(true);
                             } catch (Exception e) {
@@ -351,5 +356,26 @@ public class UpdateStatusScreen extends Form implements CommandListener, ItemSta
             saveText();
             textField.setString("");
         }
+    }
+
+    private String mediaFileExtension(int type) {
+        String me = System.getProperty(SnapshotScreen.mediaString(type) + ".encodings");
+        //encoding=image/gif encoding=image/jpeg
+        if (me != null && me.length() > 0) {
+            String[] sa = StringUtil.split(me, " ");
+            if (sa != null && sa[0].length() > 0) {
+                //encoding=image/gif
+                sa = StringUtil.split(sa[0], "=");
+                if (sa != null && sa[1].length() > 0) {
+                    //image/gif
+                    sa = StringUtil.split(sa[1], "/");
+                    if (sa != null && sa[1].length() > 0) {
+                        //gif
+                        return sa[1];
+                    }
+                }
+            }
+        }
+        return "";
     }
 }

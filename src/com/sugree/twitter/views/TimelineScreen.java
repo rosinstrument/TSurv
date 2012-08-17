@@ -74,7 +74,7 @@ public class TimelineScreen extends List implements CommandListener {
         addCommand(setupCommand = new Command("Setup", Command.SCREEN, 16));
         addCommand(logCommand = new Command("Log", Command.SCREEN, 17));
         addCommand(aboutCommand = new Command("About", Command.SCREEN, 18));
-        addCommand(exitCommand = new Command("Exit", Command.SCREEN, 19));
+        addCommand(exitCommand = new Command("Exit", Command.SCREEN, 99));
         addCommand(bookmarksCommand = new Command("Bookmarks", Command.SCREEN, 25));
         saveBookmarkCommand = new Command("SaveBookmark", Command.SCREEN, 26);
         if (!swapMinimizeRefresh) {

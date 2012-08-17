@@ -51,7 +51,7 @@ public class StatusScreen extends Form implements CommandListener, ItemCommandLi
         addCommand(followCommand = new Command("Follow", Command.SCREEN, 7));
         addCommand(unfollowCommand = new Command("Unfollow", Command.SCREEN, 7));
         addCommand(directCommand = new Command("DirectMessage", Command.SCREEN, 8));
-        addCommand(exitCommand = new Command("Exit", Command.SCREEN, 19));
+        addCommand(exitCommand = new Command("Exit", Command.SCREEN, 99));
         addCommand(bookmarksCommand = new Command("Bookmarks", Command.SCREEN, 20));
         addCommand(deleteCommand);
         linkItemCommand = new Command("Go", Command.SCREEN, 6);

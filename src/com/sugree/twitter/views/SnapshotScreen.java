@@ -34,23 +34,33 @@ public class SnapshotScreen extends Form implements CommandListener, PlayerListe
 
     private TwitterController controller;
     private Player player;
-    private VideoControl videoControl;
-    private Item videoItem;
+    private VideoControl videoControl = null;
+    private Item videoItem = null, actionDecriptionItem = null;
     private String status;
     private byte[] snapshotRaw;
     private boolean visible;
-    private Command stopCommand, snapCommand, okCommand, cancelCommand, visibleCommand;
+    private Command stopCommand, snapCommand, okCommand, cancelCommand, visibleCommand = null;
     private String currentLocator;
     private static Vector badLocator = new Vector();
     private int videoItemId = -1;
     private String recordLocator = null, recordContentType = null;
-    private Thread recVideo = null;
+    private int mediaType = 0; // video 1, audio 2
+    private Thread recMedia = null;
     private FileConnection fileConnection;
     private OutputStream fcOutputStream;
 
-    public SnapshotScreen(TwitterController controller, String status, String videoFileLocator) throws Exception {
-        super("Take a " + (videoFileLocator != null ? "video" : "picture"));
-        recordLocator = videoFileLocator;
+    public SnapshotScreen(TwitterController controller, String status, String mediaFileLocator) throws Exception {
+        super("");
+        if (mediaFileLocator != null) {
+            if (mediaFileLocator.startsWith("audio:")) {
+                mediaType = 2;
+                recordLocator = mediaFileLocator.substring(6);
+            } else {
+                mediaType = 1;
+                recordLocator = mediaFileLocator;
+            }
+        }
+        setTitle("Get a " + mediaString());
         this.controller = controller;
         this.status = status;
         try {
@@ -62,14 +72,29 @@ public class SnapshotScreen extends Form implements CommandListener, PlayerListe
         okCommand = new Command("OK", Command.OK, 3);
         addCommand(cancelCommand = new Command("Cancel", Command.CANCEL, 3));
         stopCommand = new Command("StopRec", Command.OK, 1);
-        snapCommand = new Command(video() ? "RecVideo" : "GetShot", Command.OK, 2);
-        visibleCommand = new Command("Visible/Hide", Command.SCREEN, 5);
+        snapCommand = new Command("Get " + mediaString(), Command.OK, 2);
+        if (mediaType < 2) {
+            visibleCommand = new Command("Visible/Hide", Command.SCREEN, 5);
+        }
         snapCommands(true);
         setCommandListener(this);
     }
 
-    private boolean video() {
-        return recordLocator != null;
+    private String mediaString() {
+        String ret = mediaString(mediaType);
+        if (ret != null && ret.length() > 0) {
+            return ret;
+        }
+        return "shot";
+    }
+
+    public static String mediaString(int mediaTypeId) {
+        if (mediaTypeId == 1) {
+            return "video";
+        } else if (mediaTypeId == 2) {
+            return "audio";
+        }
+        return "";
     }
 
     public void playerUpdate(Player player, String event, Object eventData) {
@@ -79,7 +104,7 @@ public class SnapshotScreen extends Form implements CommandListener, PlayerListe
     private void init() throws MediaException {
         boolean fullscreen = controller.getSettings().getBooleanProperty(Settings.SNAPSHOT_FULLSCREEN, false);
         player = null;
-        if (!video()) {
+        if (mediaType == 0) {
             String locator = controller.getSettings().getStringProperty(Settings.CAPTURE_DEVICE, Device.getSnapshotLocator());
             Vector v = new Vector();
             v.addElement(locator);
@@ -117,7 +142,7 @@ public class SnapshotScreen extends Form implements CommandListener, PlayerListe
             }
         } else {
             try {
-                player = Manager.createPlayer("capture://video");
+                player = Manager.createPlayer("capture://" + mediaString());
             } catch (IOException e) {
                 throw new MediaException(e.getMessage());
             }
@@ -131,31 +156,40 @@ public class SnapshotScreen extends Form implements CommandListener, PlayerListe
             throw new MediaException("error player.realize");
         }
         Log.info("realize() " + player.getState());
-        videoControl = (VideoControl) player.getControl("VideoControl");
-        Log.info("getControl() " + videoControl);
-        videoItem = (Item) videoControl.initDisplayMode(VideoControl.USE_GUI_PRIMITIVE, null);
-        Log.info("initDisplayMode() " + videoItem);
-        if (!fullscreen) {
-            videoControl.setDisplaySize(getHeight() * videoControl.getSourceWidth()
-                    / videoControl.getSourceHeight(), getHeight());
-            videoItem.setLayout(Item.LAYOUT_CENTER | Item.LAYOUT_NEWLINE_AFTER);
-            videoItem.setPreferredSize(getHeight() * videoControl.getSourceWidth()
-                    / videoControl.getSourceHeight(), getHeight());
-        }
-        if (fullscreen) {
-            try {
-                videoControl.setDisplayFullScreen(true);
-            } catch (MediaException e) {
-                Log.error(e.toString());
+        if (mediaType == 2) {
+            actionDecriptionItem = new StringItem(null, "Record Audio");
+            actionDecriptionItem.setLayout(Item.LAYOUT_CENTER | Item.LAYOUT_NEWLINE_BEFORE);
+        } else {
+            videoControl = (VideoControl) player.getControl("VideoControl");
+            Log.info("getControl() " + videoControl);
+            videoItem = (Item) videoControl.initDisplayMode(VideoControl.USE_GUI_PRIMITIVE, null);
+            Log.info("initDisplayMode() " + videoItem);
+            if (!fullscreen) {
+                videoControl.setDisplaySize(getHeight() * videoControl.getSourceWidth()
+                        / videoControl.getSourceHeight(), getHeight());
+                videoItem.setLayout(Item.LAYOUT_CENTER | Item.LAYOUT_NEWLINE_AFTER);
+                videoItem.setPreferredSize(getHeight() * videoControl.getSourceWidth()
+                        / videoControl.getSourceHeight(), getHeight());
+            }
+            if (fullscreen) {
+                try {
+                    videoControl.setDisplayFullScreen(true);
+                } catch (MediaException e) {
+                    Log.error(e.toString());
+                }
             }
         }
     }
 
     public void start(boolean visibleFlag) {
         deleteAll();
-        videoItemId = append(videoItem);
-        visible = visibleFlag;
-        videoControl.setVisible(visible);
+        if (videoItem != null) {
+            videoItemId = append(videoItem);
+            visible = visibleFlag;
+            videoControl.setVisible(visible);
+        } else if (actionDecriptionItem != null) {
+            append(actionDecriptionItem);
+        }
         try {
             player.start();
         } catch (Exception e) {
@@ -304,7 +338,7 @@ public class SnapshotScreen extends Form implements CommandListener, PlayerListe
             try {
                 rc.stopRecord();
                 rc.reset();
-                Log.info("recording video to " + recordLocator);
+                Log.info("recording to " + recordLocator);
                 fileConnection = (FileConnection) Connector.open(recordLocator, Connector.WRITE);
 //                rc.setRecordLocation(recordLocator);
                 rc.setRecordStream(fcOutputStream = fileConnection.openOutputStream());
@@ -341,7 +375,7 @@ public class SnapshotScreen extends Form implements CommandListener, PlayerListe
                                     Log.info("Recorded " + recordLocator + " successfully.");
                                 } catch (IOException e) {
                                     Log.error(e.getMessage());
-                                } catch (SecurityException e){
+                                } catch (SecurityException e) {
                                 }
                                 synchronized (rc) {
                                     rc.notifyAll();
@@ -359,22 +393,22 @@ public class SnapshotScreen extends Form implements CommandListener, PlayerListe
         }
     }
 
-    private String getVideo() {
+    private String getMedia() {
         try {
             controller.vibrate(10);
             player.stop();
             startRecording(null);
             player.start();
-            if (recVideo != null) {
+            if (recMedia != null) {
                 try {
-                    synchronized (recVideo) {
-                        recVideo.wait(600000);
+                    synchronized (recMedia) {
+                        recMedia.wait(600000);
                     }
                 } catch (InterruptedException ie) {
                     Log.info("interrupted sleep");
                 }
             }
-            recVideo = null;
+            recMedia = null;
             stopRecording();
             player.close();
         } catch (MediaException me) {
@@ -395,22 +429,22 @@ public class SnapshotScreen extends Form implements CommandListener, PlayerListe
             controller.setSnapshot(snapshotRaw);
             controller.showUpdate(status);
         } else if (cmd == stopCommand) {
-            if (recVideo != null) {
-                synchronized (recVideo) {
-                    recVideo.notifyAll();
+            if (recMedia != null) {
+                synchronized (recMedia) {
+                    recMedia.notifyAll();
                 }
             }
         } else if (cmd == snapCommand) {
-            if (video()) {
-                recVideo = new Thread(new Runnable() {
+            if (mediaType > 0) {
+                recMedia = new Thread(new Runnable() {
                     public void run() {
-                        String locator = getVideo();
+                        String locator = getMedia();
                         controller.showUpdate(status, locator, recordContentType);
                     }
                 });
                 addCommand(stopCommand);
                 removeCommand(snapCommand);
-                recVideo.start();
+                recMedia.start();
                 return;
             } else {
                 boolean resize;
@@ -583,10 +617,14 @@ public class SnapshotScreen extends Form implements CommandListener, PlayerListe
     private void snapCommands(boolean b) {
         if (b) {
             addCommand(snapCommand);
-            addCommand(visibleCommand);
+            if (mediaType < 2) {
+                addCommand(visibleCommand);
+            }
         } else {
             removeCommand(snapCommand);
-            removeCommand(visibleCommand);
+            if (mediaType < 2) {
+                removeCommand(visibleCommand);
+            }
         }
     }
 }
