@@ -15,7 +15,7 @@ import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.game.Sprite;
 
 public class CanvasScreen extends Canvas implements CommandListener {
-
+    
     Displayable prevScreen;
     TwitterController twiController;
     byte[] bimage = null;
@@ -40,8 +40,8 @@ public class CanvasScreen extends Canvas implements CommandListener {
     int orientation;
     private String title;
     private Command okCommand, saveCommand, cancelCommand,
-            rotate, zoomin, zoomout;
-
+            rotate, zoomin, zoomout, info;
+    
     public CanvasScreen(Image image, String title, Displayable screen, TwitterController controller, boolean cancel) throws TwitterException {
         super();
         imoriginal = image;
@@ -57,7 +57,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
             throw new TwitterException(ofm);
         }
     }
-
+    
     public CanvasScreen(byte[] bimage, String title, Displayable screen, TwitterController controller, boolean cancel) throws TwitterException {
         super();
         prevScreen = screen;
@@ -74,7 +74,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
             throw new TwitterException(ofm);
         }
     }
-
+    
     public CanvasScreen(InputStream is, String title, Displayable screen, TwitterController controller, boolean cancel) throws TwitterException {
         super();
         prevScreen = screen;
@@ -95,7 +95,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
             throw new TwitterException(io);
         }
     }
-
+    
     public CanvasScreen(String fileName, String title, Displayable screen, TwitterController controller, boolean cancel) throws TwitterException {
         super();
         prevScreen = screen;
@@ -124,7 +124,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
             }
         }
     }
-
+    
     private void init() throws TwitterException {
         if (prevScreen == null) {
             prevScreen = twiController.getCurrentScreen();
@@ -142,7 +142,8 @@ public class CanvasScreen extends Canvas implements CommandListener {
         addCommand(zoomin = new Command("zoom +", Command.SCREEN, 1));
         addCommand(zoomout = new Command("zoom -", Command.SCREEN, 1));
         addCommand(rotate = new Command("Rotate", Command.SCREEN, 1));
-        addCommand(okCommand = new Command(cancel ? "OK" : "Back", Command.BACK, 1));
+        addCommand(info = new Command("Info", Command.SCREEN, 1));
+        addCommand(okCommand = new Command(cancel ? "OK" : "Back", Command.BACK, 99));
         if (bimage != null) {
             addCommand(saveCommand = new Command("Save", Command.ITEM, 2));
         }
@@ -152,7 +153,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
         setCommandListener(this);
         twiController.setCurrent(this);
     }
-
+    
     public void paint(Graphics g) {
         if (im == null) {
             return;
@@ -184,15 +185,15 @@ public class CanvasScreen extends Canvas implements CommandListener {
             showZoomStatus = false;
         }
     }
-
+    
     protected void keyPressed(int keyCode) {
         scrollImage(keyCode, 1.3);
     }
-
+    
     protected void keyRepeated(int keyCode) {
         scrollImage(keyCode, 1);
     }
-
+    
     void scrollImage(int keyCode, double scrollAccel) {
         int keyAction;
         try {
@@ -203,8 +204,6 @@ public class CanvasScreen extends Canvas implements CommandListener {
         if (keyAction == 0) {
             keyAction = keyCode;
         }
-//      Alert a = new Alert("keyAction = " + keyAction);
-//      Display.getDisplay(midlet).setCurrent(a, this);
         switch (keyAction) {
             // (x,y) im anchor relative to canvas
             case Canvas.UP:
@@ -251,14 +250,14 @@ public class CanvasScreen extends Canvas implements CommandListener {
         }
         repaint();
     }
-
+    
     public void zoomin() {
         if (zoomlevel != 1) {
             zoomlevel--;
         }
         rescaleImage(zoomlevel);
     }
-
+    
     public void zoomout() {
         if (zoomlevel != 5) {
             zoomlevel++;
@@ -375,7 +374,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
         }
         repaint();
     }
-
+    
     void delayCallSerially(final long msec, final Runnable runn) {
         new Thread(
                 new Runnable() {
@@ -484,7 +483,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
         }
         return newImage;
     }
-
+    
     public void rotateImage(int direction) {
         // uses different method for 100% zoom rotate and zoom out rotate
         // for better memory use during 100% zoom, and zoom out rotate 
@@ -567,7 +566,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
         System.gc();
         repaint();
     }
-
+    
     protected void sizeChanged(int w, int h) {
         super.sizeChanged(w, h);
         dispHeight = h;
@@ -575,7 +574,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
         xscroll = dispWidth / 3;
         yscroll = dispHeight / 3;
     }
-
+    
     private void exit() {
         if (prevScreen != null) {
             twiController.setCurrent(prevScreen);
@@ -586,9 +585,9 @@ public class CanvasScreen extends Canvas implements CommandListener {
         synchronized (this) {
             this.notifyAll();
         }
-
+        
     }
-
+    
     private void saveImg(Displayable prevDisp) {
         try {
             String url = getTitle();
@@ -607,7 +606,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
             Log.error(ofm.toString());
         }
     }
-
+    
     public void commandAction(Command c, Displayable d) {
         if (c == okCommand) {
             okReturn = true;
@@ -621,6 +620,14 @@ public class CanvasScreen extends Canvas implements CommandListener {
             zoomin();
         } else if (c == zoomout) {
             zoomout();
+        } else if (c == info) {
+            String info = "Image: width=" + imoriginal.getWidth()
+                    + ", height=" + imoriginal.getHeight()
+                    + (bimage != null ? ", size=" + bimage.length : "")
+                    + "\nScreen: width=" + getWidth()
+                    + ", height=" + getHeight()
+                    + "\n" + twiController.memStat();
+            twiController.alert("Info about picture", info);
         }
     }
 }

@@ -17,7 +17,12 @@
  * limitations under the License.
  */
 package com.substanceofcode.infrastructure;
+
 import com.substanceofcode.utils.StringUtil;
+import com.sugree.twitter.views.SnapshotScreen;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Vector;
 
 /**
  *
@@ -139,5 +144,57 @@ public class Device {
             }
         }
         return result;
+    }
+
+    public static Vector mediaEncodings(String type) {
+        String me = System.getProperty(type + ".encodings");
+        //encoding=image/gif encoding=image/jpeg&width=640&height=480
+        if (me != null && me.length() > 0) {
+            String[] sa = StringUtil.split(me, " ");
+            if (sa != null && sa.length > 0) {
+                Vector vec = new Vector();
+                for (int i = 0; i < sa.length; i++) {
+                    //encoding=pcm&rate=22050&bits=16&channels=1
+                    if (sa[i].indexOf("encoding=") == 0) {
+                        vec.addElement(sa[i].substring(9));
+                        //image/gif
+                    }
+                }
+                return vec;
+            }
+        }
+        return null;
+    }
+
+    public static String[] mediaFileExtensions(int type) {
+        Vector vec = mediaEncodings(SnapshotScreen.mediaString(type));
+        if (vec != null) {
+            Hashtable ht = new Hashtable();
+            for (int i = 0; i < vec.size(); i++) {
+                //image/jpeg&width=640&height=480
+                String[] sa = StringUtil.split((String) vec.elementAt(i), "&");
+                //image/jpeg
+                if (sa != null && sa[0].length() > 0) {
+                    if (sa[0].indexOf('/') >= 0) {
+                        sa = StringUtil.split(sa[0], "/");
+                        if (sa != null && sa[1].length() > 0) {
+                            ht.put(sa[1], "");
+                        }
+                    } else {
+                        ht.put(sa[0], "");
+                    }
+                }
+            }
+            if (ht.size() > 0) {
+                String[] ret = new String[ht.size()];
+                Enumeration en = ht.keys();
+                int i = 0;
+                while (en.hasMoreElements()) {
+                    ret[i++] = (String) en.nextElement();
+                }
+                return ret;
+            }
+        }
+        return null;
     }
 }

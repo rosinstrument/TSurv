@@ -369,13 +369,26 @@ public class SnapshotScreen extends Form implements CommandListener, PlayerListe
                             public void run() {
                                 try {
                                     rc.commit();
-                                    fcOutputStream.flush();
-                                    fcOutputStream.close();
-                                    fileConnection.close();
                                     Log.info("Recorded " + recordLocator + " successfully.");
                                 } catch (IOException e) {
                                     Log.error(e.getMessage());
                                 } catch (SecurityException e) {
+                                    Log.error(e.getMessage());
+                                }
+                                try {
+                                    fcOutputStream.flush();
+                                } catch (IOException e) {
+                                    Log.error(e.getMessage());
+                                }
+                                try {
+                                    fcOutputStream.close();
+                                } catch (IOException e) {
+                                    Log.error(e.getMessage());
+                                }
+                                try {
+                                    fileConnection.close();
+                                } catch (IOException e) {
+                                    Log.error(e.getMessage());
                                 }
                                 synchronized (rc) {
                                     rc.notifyAll();

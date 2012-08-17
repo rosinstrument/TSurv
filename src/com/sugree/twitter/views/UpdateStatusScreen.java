@@ -1,8 +1,8 @@
 package com.sugree.twitter.views;
 
+import com.substanceofcode.infrastructure.Device;
 import com.substanceofcode.twitter.Settings;
 import com.substanceofcode.utils.Log;
-import com.substanceofcode.utils.StringUtil;
 import com.sugree.twitter.TwitterController;
 import com.sugree.twitter.TwitterException;
 import com.sugree.utils.Location;
@@ -358,23 +358,10 @@ public class UpdateStatusScreen extends Form implements CommandListener, ItemSta
         }
     }
 
-    private String mediaFileExtension(int type) {
-        String me = System.getProperty(SnapshotScreen.mediaString(type) + ".encodings");
-        //encoding=image/gif encoding=image/jpeg
-        if (me != null && me.length() > 0) {
-            String[] sa = StringUtil.split(me, " ");
-            if (sa != null && sa[0].length() > 0) {
-                //encoding=image/gif
-                sa = StringUtil.split(sa[0], "=");
-                if (sa != null && sa[1].length() > 0) {
-                    //image/gif
-                    sa = StringUtil.split(sa[1], "/");
-                    if (sa != null && sa[1].length() > 0) {
-                        //gif
-                        return sa[1];
-                    }
-                }
-            }
+    private static String mediaFileExtension(int type) {
+        String[] ext = Device.mediaFileExtensions(type);
+        if (ext != null && ext.length > 0) {
+            return ext[0];
         }
         return "";
     }

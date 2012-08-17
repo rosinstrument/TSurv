@@ -706,11 +706,11 @@ public class FileScreen extends Form implements CommandListener, FileSystemListe
         Calendar cal = Calendar.getInstance();
         cal.setTime(new Date());
         StringBuffer sb = new StringBuffer();
-        sb.append(cal.get(Calendar.YEAR));
-        sb.append('-');
         sb.append(monthList[cal.get(Calendar.MONTH)]);
         sb.append('-');
         sb.append(cal.get(Calendar.DAY_OF_MONTH));
+        sb.append('-');
+        sb.append(cal.get(Calendar.YEAR));
         sb.append('_');
         sb.append(cal.get(Calendar.HOUR_OF_DAY));
         sb.append('-');
