@@ -1,10 +1,13 @@
 package com.sugree.twitter.views;
 
+import com.substanceofcode.tasks.AbstractTask;
 import com.substanceofcode.utils.Log;
 import com.sugree.twitter.TwitterController;
 import com.sugree.twitter.TwitterException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Timer;
+import java.util.TimerTask;
 import javax.microedition.io.Connector;
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Command;
@@ -15,7 +18,7 @@ import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.game.Sprite;
 
 public class CanvasScreen extends Canvas implements CommandListener {
-    
+
     Displayable prevScreen;
     TwitterController twiController;
     byte[] bimage = null;
@@ -41,7 +44,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
     private String title;
     private Command okCommand, saveCommand, cancelCommand,
             rotate, zoomin, zoomout, info;
-    
+
     public CanvasScreen(Image image, String title, Displayable screen, TwitterController controller, boolean cancel) throws TwitterException {
         super();
         imoriginal = image;
@@ -57,7 +60,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
             throw new TwitterException(ofm);
         }
     }
-    
+
     public CanvasScreen(byte[] bimage, String title, Displayable screen, TwitterController controller, boolean cancel) throws TwitterException {
         super();
         prevScreen = screen;
@@ -74,7 +77,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
             throw new TwitterException(ofm);
         }
     }
-    
+
     public CanvasScreen(InputStream is, String title, Displayable screen, TwitterController controller, boolean cancel) throws TwitterException {
         super();
         prevScreen = screen;
@@ -95,36 +98,67 @@ public class CanvasScreen extends Canvas implements CommandListener {
             throw new TwitterException(io);
         }
     }
-    
-    public CanvasScreen(String fileName, String title, Displayable screen, TwitterController controller, boolean cancel) throws TwitterException {
+
+    public CanvasScreen(final String fileName, String title, Displayable screen, TwitterController controller, boolean cancel) throws TwitterException {
         super();
         prevScreen = screen;
         twiController = controller;
         this.cancel = cancel;
         this.title = title;
-        InputStream fis = null;
-        try {
-            fis = Connector.openInputStream(fileName);
-            imoriginal = Image.createImage(fis);
-            init();
-        } catch (OutOfMemoryError ofm) {
-            Log.error("init: " + ofm.toString());
-            exit();
-            throw new TwitterException(ofm);
-        } catch (IOException io) {
-            Log.error("init: " + io.toString());
-            exit();
-            throw new TwitterException(io);
-        } finally {
-            try {
-                if (fis != null) {
-                    fis.close();
+        final Throwable[] taskRet = new Throwable[1];
+        taskRet[0] = null;
+        final WaitScreen ws = new WaitScreen(controller, new AbstractTask() {
+            public void doTask() {
+                InputStream fis = null;
+                try {
+                    fis = Connector.openInputStream(fileName);
+                    imoriginal = Image.createImage(fis);
+                } catch (OutOfMemoryError ofm) {
+                    Log.error("init: " + ofm.toString());
+                    taskRet[0] = ofm;
+                } catch (IOException io) {
+                    Log.error("init: " + io.toString());
+                    taskRet[0] = io;
+                } finally {
+                    try {
+                        if (fis != null) {
+                            fis.close();
+                        }
+                    } catch (Exception e) {
+                    }
+                    synchronized (taskRet) {
+                        taskRet.notifyAll();
+                    }
                 }
-            } catch (Exception e) {
+            }
+        }, screen);
+        ws.start();
+        ws.setState("downloading..");
+        ws.println("from " + fileName + " ..");
+        controller.setCurrent(ws);
+        ws.setProgress(0);
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            public void run() {
+                ws.addProgressCircle(1);
+            }
+        }, 500, 500);
+        synchronized (taskRet) {
+            try {
+                taskRet.wait();
+            } catch (InterruptedException ie) {
+                taskRet[0] = ie;
             }
         }
+        timer.cancel();
+        if (taskRet[0] == null) {
+            init();
+        } else {
+            exit();
+            throw new TwitterException(taskRet[0]);
+        }
     }
-    
+
     private void init() throws TwitterException {
         if (prevScreen == null) {
             prevScreen = twiController.getCurrentScreen();
@@ -153,7 +187,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
         setCommandListener(this);
         twiController.setCurrent(this);
     }
-    
+
     public void paint(Graphics g) {
         if (im == null) {
             return;
@@ -185,15 +219,15 @@ public class CanvasScreen extends Canvas implements CommandListener {
             showZoomStatus = false;
         }
     }
-    
+
     protected void keyPressed(int keyCode) {
         scrollImage(keyCode, 1.3);
     }
-    
+
     protected void keyRepeated(int keyCode) {
         scrollImage(keyCode, 1);
     }
-    
+
     void scrollImage(int keyCode, double scrollAccel) {
         int keyAction;
         try {
@@ -250,14 +284,14 @@ public class CanvasScreen extends Canvas implements CommandListener {
         }
         repaint();
     }
-    
+
     public void zoomin() {
         if (zoomlevel != 1) {
             zoomlevel--;
         }
         rescaleImage(zoomlevel);
     }
-    
+
     public void zoomout() {
         if (zoomlevel != 5) {
             zoomlevel++;
@@ -374,7 +408,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
         }
         repaint();
     }
-    
+
     void delayCallSerially(final long msec, final Runnable runn) {
         new Thread(
                 new Runnable() {
@@ -483,7 +517,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
         }
         return newImage;
     }
-    
+
     public void rotateImage(int direction) {
         // uses different method for 100% zoom rotate and zoom out rotate
         // for better memory use during 100% zoom, and zoom out rotate 
@@ -566,7 +600,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
         System.gc();
         repaint();
     }
-    
+
     protected void sizeChanged(int w, int h) {
         super.sizeChanged(w, h);
         dispHeight = h;
@@ -574,7 +608,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
         xscroll = dispWidth / 3;
         yscroll = dispHeight / 3;
     }
-    
+
     private void exit() {
         if (prevScreen != null) {
             twiController.setCurrent(prevScreen);
@@ -585,9 +619,9 @@ public class CanvasScreen extends Canvas implements CommandListener {
         synchronized (this) {
             this.notifyAll();
         }
-        
+
     }
-    
+
     private void saveImg(Displayable prevDisp) {
         try {
             String url = getTitle();
@@ -606,7 +640,7 @@ public class CanvasScreen extends Canvas implements CommandListener {
             Log.error(ofm.toString());
         }
     }
-    
+
     public void commandAction(Command c, Displayable d) {
         if (c == okCommand) {
             okReturn = true;

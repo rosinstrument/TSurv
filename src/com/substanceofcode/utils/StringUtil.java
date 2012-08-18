@@ -22,6 +22,7 @@ import com.sugree.utils.URLDecoder;
 import com.sugree.utils.URLEncoder;
 import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.Vector;
 import javax.microedition.lcdui.Font;
 
@@ -98,6 +99,21 @@ public class StringUtil {
     public static boolean isHash(String chunk) {
         return chunk != null && chunk.length() > 2
                 && (chunk.startsWith("#") || chunk.startsWith("@") || chunk.startsWith("$"));
+    }
+    private static Integer intValue = new Integer(0);
+
+    public static String[] uniq(String[] stringArray) {
+        Hashtable ht = new Hashtable();
+        for (int i = 0; i < stringArray.length; i++) {
+            ht.put(stringArray[i], intValue);
+        }
+        String[] ret = new String[ht.size()];
+        Enumeration en = ht.keys();
+        int i = 0;
+        while (en.hasMoreElements()) {
+            ret[i++] = (String) en.nextElement();
+        }
+        return ret;
     }
 
     /**
@@ -285,6 +301,10 @@ public class StringUtil {
      *
      * The exception is if a single WORD is wider than 'width' in which case
      * that word will be on its own, but it WILL still be longer than 'width'
+     *
+     *
+     *
+     *
      *
      *
      *

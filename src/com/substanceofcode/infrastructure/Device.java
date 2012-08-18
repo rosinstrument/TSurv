@@ -96,10 +96,13 @@ public class Device {
 
     public static String[] getSnapshotEncodings() {
         try {
-            return StringUtil.split(System.getProperty("video.snapshot.encodings"), " ");
+            return StringUtil.uniq(
+                    StringUtil.split(
+                    System.getProperty("video.snapshot.encodings"),
+                    " "));
         } catch (Exception ex) {
-            return null;
         }
+        return null;
     }
 
     public static int getCellID() {

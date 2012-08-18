@@ -90,13 +90,23 @@ public class StatusScreen extends Form implements CommandListener, ItemCommandLi
                 if (tCoResolver.isTCo(chunk)) {
                     chunk = tCoResolver.resolve(chunk);
                 }
+                StringItem save = null;
                 if (StringUtil.isImgUrl(chunk)) {
                     mediaUrls.put(chunk, "");
+                    final String cmdSave = "[save]";
+                    Command cms = new Command(cmdSave, Command.SCREEN, 9);
+                    commandToImage.put(cms, new ImgURL(null, chunk));
+                    save = new StringItem(null, cmdSave, Item.HYPERLINK);
+                    save.addCommand(cms);
+                    save.setItemCommandListener(this);
                 }
                 si = new StringItem("", chunk, Item.HYPERLINK);
                 si.addCommand(linkItemCommand);
                 si.setItemCommandListener(this);
                 items2append.addElement(si);
+                if (save != null) {
+                    items2append.addElement(save);
+                }
                 if (separator != null) {
                     items2append.addElement(new StringItem("", separator, Item.PLAIN));
                 }
@@ -176,13 +186,13 @@ public class StatusScreen extends Form implements CommandListener, ItemCommandLi
                                         Log.error(e.toString());
                                         append(" Failed: " + e.toString());
                                     } finally {
-                                        final String cmdDesc = "Save to File";
-                                        Command cms = new Command(cmdDesc, Command.SCREEN, 9);
-                                        commandToImage.put(cms, new ImgURL(null, u));
-                                        StringItem si = new StringItem(null, cmdDesc, Item.HYPERLINK);
-                                        si.addCommand(cms);
-                                        si.setItemCommandListener(StatusScreen.this);
-                                        append(si);
+//                                        final String cmdDesc = "Save to File";
+//                                        Command cms = new Command(cmdDesc, Command.SCREEN, 9);
+//                                        commandToImage.put(cms, new ImgURL(null, u));
+//                                        StringItem si = new StringItem(null, cmdDesc, Item.HYPERLINK);
+//                                        si.addCommand(cms);
+//                                        si.setItemCommandListener(StatusScreen.this);
+//                                        append(si);
                                     }
 
                                 }
@@ -282,7 +292,9 @@ public class StatusScreen extends Form implements CommandListener, ItemCommandLi
         } else if (cmd == prevStatusCommand) {
             controller.timeline.prevSelected();
         } else if (cmd == retweetCommand) {
-            controller.showUpdate(status.getRetweet(controller.getStatusMaxLength()));
+            controller.showUpdate(
+                    status.getRetweet(
+                    controller.getStatusMaxLength()));
         } else if (cmd == favoriteCommand) {
             controller.toggleFavorited(status);
         } else if (cmd == forceImgCommand) {

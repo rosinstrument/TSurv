@@ -63,6 +63,17 @@ public class WaitScreen extends Form implements CommandListener, Runnable, Logga
         progressField.setValue(value);
     }
 
+    public void addProgressCircle(int value) {
+        int newVal = progressField.getValue() + value;
+        if (newVal > progressField.getMaxValue()) {
+            newVal = 0;
+        }
+        if (newVal < 0) {
+            newVal = progressField.getMaxValue();
+        }
+        progressField.setValue(newVal);
+    }
+
     public void clear() {
         setText("");
     }
